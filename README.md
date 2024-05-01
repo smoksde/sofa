@@ -1,3 +1,5 @@
+### Novel approach to the sofa problem using graphics processing and backpropagation free optimization algorithms
+
 This project implements a novel approach on the well known yet unsolved sofa problem.
 
 An implemented optimization algorithm is supposed to converge against the
