@@ -1,0 +1,30 @@
+#include "fourier.h"
+
+const double PI = 3.14159265358979323846;
+
+void DFT(std::vector<double>& signal, std::complex<double>* spectrum, int N)
+{
+    for (int k = 0; k < N; k++)
+    {
+        spectrum[k] = 0;
+        for (int n = 0; n < N; n++)
+        {
+            spectrum[k] += std::complex<double>(signal[n], 0) * std::polar(1.0, -2 * PI * k * n / N);
+        }
+    }
+}
+
+void IDFT(std::complex<double>* spectrum, std::vector<double>& signal, int N)
+{
+    for (int n = 0; n < N; n++)
+    {
+        signal[n] = 0;
+        for (int k = 0; k < N; k++)
+        {
+            double angle = 2 * PI * k * n / N;
+            signal[n] += (spectrum[k].real() / N) * cos(angle) - (spectrum[k].imag() / N) * sin(angle);
+        }
+    }
+}
+
+
