@@ -3,7 +3,7 @@
 const double PI = 3.14159265358979323846;
 
 // Implementation of discrete fourier transformation
-void DFT(std::vector<double>& signal, std::complex<double>* spectrum, int N)
+void DFT(std::vector<double>& signal, std::vector<std::complex<double>>& spectrum, int N)
 {
     for (int k = 0; k < N; k++)
     {
@@ -16,7 +16,7 @@ void DFT(std::vector<double>& signal, std::complex<double>* spectrum, int N)
 }
 
 // Implementation of inverse discrete fourier transformation
-void IDFT(std::complex<double>* spectrum, std::vector<double>& signal, int N)
+void IDFT(std::vector<std::complex<double>>& spectrum, std::vector<double>& signal, int N)
 {
     for (int n = 0; n < N; n++)
     {

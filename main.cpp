@@ -51,7 +51,7 @@ int main()
     }
 
     // Create an SDL window and OpenGL context
-    SDL_Window* window = SDL_CreateWindow("Sofa Problem - Visualization", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 800, 600, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+    SDL_Window* window = SDL_CreateWindow("Sofa Problem - Visualization", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, FRAME_WIDTH, FRAME_HEIGHT, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
     if (!window)
     {
         std::cerr << "Failed to create SDL window: " << SDL_GetError() << std::endl;
@@ -138,7 +138,7 @@ int main()
    
     SDL_GL_SwapWindow(window);
 
-    SDL_Delay(2000);
+    SDL_Delay(4000);
 
     return 0;
 }
