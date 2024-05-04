@@ -123,8 +123,6 @@ int main()
     glUseProgram(shaderProgram);
     glBindVertexArray(VAO);
 
-
-
     // Clean window
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
