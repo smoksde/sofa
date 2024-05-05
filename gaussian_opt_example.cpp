@@ -11,7 +11,7 @@ namespace plt = matplotlibcpp;
 
 const int N = 1000;
 const int population_size = 100;
-const int iterations = 1000000;
+const int iterations = 10000;
 
 void generate_gaussian_signal(std::vector<double>& gaussian)
 {
@@ -68,7 +68,10 @@ int main()
     for (int i = 0; i < N; i++)
     {
         true_signal[i] = sin(2 * PI * i / N) + 0.5 * sin(4 * PI * i / N);
+        //true_signal[i] = -1.0;
         // true_signal[i] = 0.5 * sin(4 * PI * i / N);
+        // true_signal[i] = i*i / 1000000.0;
+        // true_signal[i] = sin(2 * PI * i / N) + cos(2 * PI * (i - 100) / N);
         indices[i] = (double)i;
     }
 
@@ -117,12 +120,15 @@ int main()
         }
     }
 
-    /*for (int j = 0; j < signal_progression.size(); j++)
+    plt::plot(indices, true_signal);
+
+    for (int j = 0; j < signal_progression.size(); j++)
     {
         plt::plot(indices, signal_progression[j]);
+        plt::pause(0.05);
         std::cout << score_progression[j] << std::endl;
     }
-    plt::show();*/
+    plt::show();
 
     plt::plot(indices, best_signal);
     plt::show();
