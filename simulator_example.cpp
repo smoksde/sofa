@@ -21,26 +21,6 @@
 const int FRAME_WIDTH = 1400;
 const int FRAME_HEIGHT = 1400;
 
-const char* read_shader_from_file(const std::string& filePath)
-{
-    std::ifstream shaderFile(filePath);
-    if (!shaderFile.is_open())
-    {
-        std::cerr << "Failed to open shader file: " << filePath << std::endl;
-        return "";
-    }
-
-    std::stringstream shaderStream;
-    shaderStream << shaderFile.rdbuf();
-    shaderFile.close();
-
-    std::string shaderSourceStr = shaderStream.str();
-    char* shaderSource = new char[shaderSourceStr.length() + 1];
-    strcpy(shaderSource, shaderSourceStr.c_str());
-
-    return shaderSource;
-}
-
 int main()
 {
     // Initialize SDL
