@@ -2,6 +2,8 @@
 
 #include <random>
 #include <chrono>
+#include <vector>
+
 
 double random_double(double min, double max)
 {
@@ -32,4 +34,13 @@ bool random_bool()
 
     // Generate a random integer (0 or 1) and convert it to bool
     return static_cast<bool>(distribution(generator));
+}
+
+std::vector<float> linspace(float startValue, float endValue, int numValues) {
+    std::vector<float> result(numValues);
+    float step = (endValue - startValue) / float(numValues - 1);
+    for (int i = 0; i < numValues; ++i) {
+        result[i] = startValue + float(i) * step;
+    }
+    return result;
 }
