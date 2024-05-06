@@ -167,12 +167,6 @@ int main()
     unsigned int uniform_location_offset_x = glGetUniformLocation(shaderProgram, "offsetX");
     unsigned int uniform_location_offset_y = glGetUniformLocation(shaderProgram, "offsetY");
 
-    // Clean window
-    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    SDL_GL_SwapWindow(window);
-
     const int N = 100;
 
     std::vector<float> signal_offset_x(N);
@@ -188,15 +182,24 @@ int main()
 
     signal_yaw = linspace(0.0f, 90.0f * M_PI / 180.0f, N);
 
-    glUniform1i(uniform_N, N);
-    glUniform1fv(uniform_location_angle, N, signal_yaw.data());
-    glUniform1fv(uniform_location_offset_x, N, signal_offset_x.data());
-    glUniform1fv(uniform_location_offset_y, N, signal_offset_y.data());
+    for (int i = 1; i < N + 1; i++)
+    {
+        // Clean window
+        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
 
-    glDrawArrays(GL_TRIANGLES, 0, 18);
+        glUniform1i(uniform_N, i);
+        glUniform1fv(uniform_location_angle, i, signal_yaw.data());
+        glUniform1fv(uniform_location_offset_x, i, signal_offset_x.data());
+        glUniform1fv(uniform_location_offset_y, i, signal_offset_y.data());
 
-    SDL_GL_SwapWindow(window);
-    SDL_Delay(1000);
+        glDrawArrays(GL_TRIANGLES, 0, 18);
+
+        SDL_GL_SwapWindow(window);
+        SDL_Delay(10);
+    }
+
+    SDL_Delay(2000);
 
     return 0;
 }

@@ -4,8 +4,31 @@
 #include <chrono>
 #include <vector>
 
+#include <sstream>
+#include <fstream>
+#include <cstring>
 
-double random_double(double min, double max)
+inline const char* read_shader_from_file(const std::string& filePath)
+{
+    std::ifstream shaderFile(filePath);
+    if (!shaderFile.is_open())
+    {
+        std::cerr << "Failed to open shader file: " << filePath << std::endl;
+        return "";
+    }
+
+    std::stringstream shaderStream;
+    shaderStream << shaderFile.rdbuf();
+    shaderFile.close();
+
+    std::string shaderSourceStr = shaderStream.str();
+    char* shaderSource = new char[shaderSourceStr.length() + 1];
+    strcpy(shaderSource, shaderSourceStr.c_str());
+
+    return shaderSource;
+}
+
+inline double random_double(double min, double max)
 {
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -15,7 +38,7 @@ double random_double(double min, double max)
     return distribution(gen);
 }
 
-int random_int(int min, int max) {
+inline int random_int(int min, int max) {
     // Use a high-resolution clock to seed the random number engine
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::default_random_engine generator(seed);
@@ -25,7 +48,7 @@ int random_int(int min, int max) {
     return distribution(generator);
 }
 
-bool random_bool()
+inline bool random_bool()
 {
     // Use a high-resolution clock to seed the random number engine
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
@@ -36,7 +59,7 @@ bool random_bool()
     return static_cast<bool>(distribution(generator));
 }
 
-std::vector<float> linspace(float startValue, float endValue, int numValues) {
+inline std::vector<float> linspace(float startValue, float endValue, int numValues) {
     std::vector<float> result(numValues);
     float step = (endValue - startValue) / float(numValues - 1);
     for (int i = 0; i < numValues; ++i) {
