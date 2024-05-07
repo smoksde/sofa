@@ -38,6 +38,16 @@ inline double random_double(double min, double max)
     return distribution(gen);
 }
 
+inline double random_float(float min, float max)
+{
+    std::random_device rd;
+    std::mt19937 gen(rd());
+
+    std::uniform_real_distribution<float> distribution(min, max);
+
+    return distribution(gen);
+}
+
 inline int random_int(int min, int max) {
     // Use a high-resolution clock to seed the random number engine
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
