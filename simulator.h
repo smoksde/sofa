@@ -44,4 +44,5 @@ class Simulator
 
     Simulator(int N, int frame_width, int frame_height);
     int simulate(std::vector<float>& signal_yaw, std::vector<float>& signal_offset_x, std::vector<float>& signal_offset_y);
+    void sleep(int duration);
 };

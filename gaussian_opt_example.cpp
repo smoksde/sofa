@@ -13,17 +13,17 @@ const int N = 1000;
 const int population_size = 100;
 const int iterations = 10000;
 
-void generate_gaussian_signal(std::vector<double>& gaussian)
+void generate_gaussian_signal(std::vector<double>& gaussian, double mean_min, double mean_max, double sigma_min, double sigma_max)
 {
     std::random_device rd;
     std::mt19937 gen(rd());
 
     // Generate random mean in the range of 0 to N
-    std::uniform_real_distribution<double> mean_dist(0.0, static_cast<double>(N));
+    std::uniform_real_distribution<double> mean_dist(mean_min, mean_max);
     double mean = mean_dist(gen);
 
     // Generate random sigma (standard deviation)
-    std::uniform_real_distribution<double> sigma_dist(0.1, 100.0); // Mean = 1.0, Std dev = 0.5
+    std::uniform_real_distribution<double> sigma_dist(sigma_min, sigma_max); // Mean = 1.0, Std dev = 0.5
     double sigma = sigma_dist(gen);
 
     // Generate Gaussian signal
@@ -103,11 +103,19 @@ int main()
     std::vector<double> gaussian_signal = best_signal;
     double best_score = compute_score(best_signal, true_signal);
 
+    double mean_min = 0.0;
+    double mean_max = double(N);
+    double sigma_min = 0.1;
+    double sigma_max = 100.0;
+
+    double lower_factor_bound = -0.1;
+    double upper_factor_bound = 0.1;
+
     for (int i = 0; i < iterations; i++)
     {
         std::vector<double> new_signal = best_signal;
-        generate_gaussian_signal(gaussian_signal);
-        factor_signal(gaussian_signal, random_double(-0.1, 0.1));
+        generate_gaussian_signal(gaussian_signal, mean_min, mean_max, sigma_min, sigma_max);
+        factor_signal(gaussian_signal, random_double(lower_factor_bound, upper_factor_bound));
         add_signal(new_signal, gaussian_signal);
         double new_score = compute_score(new_signal, true_signal);
         if (new_score > best_score)

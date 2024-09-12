@@ -99,14 +99,13 @@ int Simulator::simulate(std::vector<float>& signal_yaw, std::vector<float>& sign
 
     glDrawArrays(GL_TRIANGLES, 0, 18);
 
-    SDL_GL_SwapWindow(window);
-    SDL_Delay(10);
+    // SDL_Delay(10);
 
     // Count percentage remaining in clear color
     int totalPixels = frame_width * frame_height;
     int clearColorPixels = 0;
     std::vector<GLubyte> pixelData(totalPixels * 4); // RGBA format
-    glReadBuffer(GL_FRONT_LEFT);
+    glReadBuffer(GL_BACK);
     glReadPixels(0, 0, frame_width, frame_height, GL_RGBA, GL_UNSIGNED_BYTE, pixelData.data());
 
     for (int i = 0; i < totalPixels * 4; i += 4)
@@ -119,4 +118,10 @@ int Simulator::simulate(std::vector<float>& signal_yaw, std::vector<float>& sign
 
     int score = clearColorPixels;
     return score;
+}
+
+void Simulator::sleep(int duration)
+{
+    SDL_Delay(duration);
+    return;
 }

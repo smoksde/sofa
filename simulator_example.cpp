@@ -147,7 +147,7 @@ int main()
     unsigned int uniform_location_offset_x = glGetUniformLocation(shaderProgram, "offsetX");
     unsigned int uniform_location_offset_y = glGetUniformLocation(shaderProgram, "offsetY");
 
-    const int N = 100;
+    const int N = 10;
 
     std::vector<float> signal_offset_x(N);
     std::vector<float> signal_offset_y(N);
@@ -176,7 +176,7 @@ int main()
         glDrawArrays(GL_TRIANGLES, 0, 18);
 
         SDL_GL_SwapWindow(window);
-        SDL_Delay(10);
+        SDL_Delay(400);
     }
 
     SDL_Delay(2000);
