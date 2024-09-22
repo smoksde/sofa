@@ -6,6 +6,7 @@
 #include "libs/glm/gtc/type_ptr.hpp"
 
 #include <string>
+#include <cmath>
 
 class Camera
 {
@@ -26,6 +27,11 @@ public:
     float pitch;
     float yaw;
 
+    glm::vec3 velocity = glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 velocity_change = glm::vec3(0.0f, 0.0f, 0.0f);
+    float velocity_damper_factor = 0.05f;
+    float velocity_change_factor = 0.005f;
+
     Camera(glm::vec3 init_position, glm::vec3 init_front, glm::vec3 init_up, float init_fov, float init_aspect_ratio, float init_near_clip, float init_far_clip, 
     float init_movement_speed = 2.5f, float init_mouse_sensitivity = 0.1f)
     : position(init_position), front(init_front), up(init_up), world_up(init_up),
@@ -45,18 +51,42 @@ public:
         return glm::perspective(glm::radians(fov), aspect_ratio, near_clip, far_clip);
     }
 
-    void processKeyboard(const std::string &direction, float delta_time)
+    void processKeyboard(float delta_time)
     {
-        float velocity = movement_speed * delta_time;
-        if (direction == "FORWARD")
-            position += front * velocity;
-        if (direction == "BACKWARD")
-            position -= front * velocity;
-        if (direction == "LEFT")
-            position -= right * velocity;
-        if (direction == "RIGHT")
-            position += right * velocity;
+        velocity_change = glm::vec3(0.0f, 0.0f, 0.0f);
+
+        const Uint8* state = SDL_GetKeyboardState(NULL);
+
+        if (state[SDL_SCANCODE_W]) {
+            glm::vec3 proj_front = front;
+            proj_front.y = 0.0f;
+            proj_front = glm::normalize(proj_front);
+            velocity_change += proj_front;
+        }
+        if (state[SDL_SCANCODE_S]) {
+            glm::vec3 proj_front = front;
+            proj_front.y = 0.0f;
+            proj_front = glm::normalize(proj_front);
+            velocity_change -= proj_front;
+        }
+        if (state[SDL_SCANCODE_A]) {
+            velocity_change -= right;
+        }
+        if (state[SDL_SCANCODE_D]) {
+            velocity_change += right;
+        }
+        if (state[SDL_SCANCODE_SPACE]) {
+            velocity_change += world_up;
+        }
+        if (state[SDL_SCANCODE_LSHIFT]) {
+            velocity_change -= world_up;
+        }
+
+        velocity += velocity_change * delta_time * velocity_change_factor;
+        velocity *= velocity_damper_factor * delta_time;
+        position += velocity;
     }
+
 
     void processMouseMovement(float x_offset, float y_offset, bool constrain_pitch = true)
     {

@@ -13,15 +13,15 @@
 int main()
 {
     const char* frame_title = "Interface";
-    int frame_width = 1400;
-    int frame_height = 1400;
+    int frame_width = 2560;
+    int frame_height = 1600;
 
-    const int fps = 20;
-    const int tps = 1;
+    const int fps = 120;
+    const int tps = 120;
 
     Frame frame = Frame(frame_title, frame_width, frame_height);
     Camera camera(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f),
-    45.0f, frame_width / frame_height, 0.1f, 100.0f);
+    45.0f, (float)frame_width / frame_height, 0.1f, 100.0f);
     Shader default_shader = Shader("shaders/default_vertex_shader.glsl", "shaders/default_fragment_shader.glsl");
 
     // std::vector<float> vertices = loadVerticesFromFile("vertices/cube_vertices.txt");
@@ -39,25 +39,27 @@ int main()
 
     std::vector<uint> indices =
     {
-        0, 1, 2,
-        0, 2, 3,
-        2, 3, 7,
-        2, 7, 6,
-        2, 6, 5,
-        2, 1, 5,
-        0, 1, 4,
-        1, 4, 5,
-        0, 3, 4,
-        3, 4, 7,
-        4, 5, 6,
-        4, 6, 7
+        0, 2, 1,
+        0, 3, 2,
+        2, 7, 3,
+        2, 6, 7,
+        2, 5, 6,
+        2, 5, 1,
+        0, 4, 1,
+        1, 5, 4,
+        0, 4, 3,
+        3, 7, 4,
+        4, 6, 5,
+        4, 7, 6
     };
     uint num_indices = 36;
 
-    std::vector<float>
-
-
     glEnable(GL_DEPTH_TEST);
+    glDisable(GL_CULL_FACE);
+    glFrontFace(GL_CW);   // Winding order to clock-wise
+    
+    SDL_SetRelativeMouseMode(SDL_TRUE); // infinite mouse movement, no cursor, always in window
+
 
     // Create EBO
     unsigned int EBO;
@@ -86,6 +88,7 @@ int main()
     uint64 last_tick_time = sdl_ticks;
     uint64 last_update_time = sdl_ticks;
     uint64 last_render_time = sdl_ticks;
+    uint64 last_time = sdl_ticks;
     uint64 current_time = sdl_ticks;
 
     float last_x = frame_width / 2.0f;
@@ -96,44 +99,19 @@ int main()
     {
         current_time = SDL_GetTicks64();
 
+        uint64 delta_time = (current_time - last_time) / 1000.0f;
+        uint64 last_time = current_time;
+
         while (SDL_PollEvent(&event))
         {
             if (event.type == SDL_QUIT)
             {
                 running = false;
             }
-            else if (event.type == SDL_KEYDOWN)
-            {
-                switch (event.key.keysym.sym)
-                {
-                    case SDLK_w:
-                        camera.processKeyboard("FORWARD", (current_time - last_tick_time) / 1000.0f);
-                        break;
-                    case SDLK_s:
-                        camera.processKeyboard("BACKWARD", (current_time - last_tick_time) / 1000.0f);
-                        break;
-                    case SDLK_a:
-                        camera.processKeyboard("LEFT", (current_time - last_tick_time) / 1000.0f);
-                        break;
-                    case SDLK_d:
-                        camera.processKeyboard("RIGHT", (current_time - last_tick_time) / 1000.0f);
-                        break;
-                }
-            }
             else if (event.type == SDL_MOUSEMOTION)
             {
-                // CHECK IF NECESSARY
-                if (first_mouse)
-                {
-                    last_x = event.motion.x;
-                    last_y = event.motion.y;
-                    first_mouse = false;
-                }
-
-                float offset_x = event.motion.x - last_x;
-                float offset_y = last_y - event.motion.y;
-                last_x = event.motion.x;
-                last_y = event.motion.y;
+                float offset_x = event.motion.xrel;
+                float offset_y = -event.motion.yrel;
 
                 camera.processMouseMovement(offset_x, offset_y);
             }
@@ -149,6 +127,7 @@ int main()
 
         if (tick_delta_time >= 1000 / tps)
         {
+            camera.processKeyboard(tick_delta_time);
             last_tick_time = current_time;
         }
 
@@ -163,10 +142,10 @@ int main()
 
             default_shader.bind();
 
-            glm::mat4 model = glm::mat4(1.0f); // Identity matrix (no transformation)
-            model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f)); // Translation
-            model = glm::rotate(model, glm::radians(0.0f), glm::vec3(0.0f, 1.0f, 0.0f)); // Rotation
-            model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f)); // Scaling
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+            model = glm::rotate(model, glm::radians(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+            model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
 
             glm::mat4 view = camera.getViewMatrix();
             glm::mat4 projection = camera.getProjectionMatrix();
