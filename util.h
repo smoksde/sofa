@@ -8,6 +8,38 @@
 #include <fstream>
 #include <cstring>
 
+#include <iostream>
+#include <string>
+
+std::vector<float> loadVerticesFromFile(const std::string& filepath)
+{
+    std::vector<float> vertices;
+    std::ifstream file(filepath);
+    std::string line;
+
+    if (file.is_open())
+    {
+        while (std::getline(file, line))
+        {
+            std::stringstream ss(line);
+            float x, y, z;
+            if (ss >> x >> y >> z)
+            {
+                vertices.push_back(x);
+                vertices.push_back(y);
+                vertices.push_back(z);
+            }
+        }
+        file.close();
+    }
+    else
+    {
+        std::cerr << "Unable to open file: " << filepath << std::endl;
+    }
+
+    return vertices;
+}
+
 inline const char* read_shader_from_file(const std::string& filePath)
 {
     std::ifstream shaderFile(filePath);
