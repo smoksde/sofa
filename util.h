@@ -11,23 +11,45 @@
 #include <iostream>
 #include <string>
 
-std::vector<float> loadVerticesFromFile(const std::string& filepath)
+void loadGeometryFromFile(const std::string& filepath, std::vector<float>& vertices, uint& num_vertices, std::vector<uint>& indices, uint& num_indices)
 {
-    std::vector<float> vertices;
+    num_vertices = 0;
+    num_indices = 0;
+
     std::ifstream file(filepath);
     std::string line;
+
+    bool first = true;
 
     if (file.is_open())
     {
         while (std::getline(file, line))
-        {
-            std::stringstream ss(line);
-            float x, y, z;
-            if (ss >> x >> y >> z)
+        {   
+            if (line.empty())
             {
-                vertices.push_back(x);
-                vertices.push_back(y);
-                vertices.push_back(z);
+                first = false;
+            }
+            else
+            {
+                std::stringstream ss(line);
+                std::string x, y, z;
+                if (ss >> x >> y >> z)
+                {
+                    if (first)
+                    {
+                        vertices.push_back(std::stof(x));
+                        vertices.push_back(std::stof(y));
+                        vertices.push_back(std::stof(z));
+                        num_vertices++;
+                    }
+                    else
+                    {
+                        indices.push_back(static_cast<uint>(std::stoi(x)));
+                        indices.push_back(static_cast<uint>(std::stoi(y)));
+                        indices.push_back(static_cast<uint>(std::stoi(z)));
+                        num_indices += 3;
+                    }
+                }
             }
         }
         file.close();
@@ -37,7 +59,7 @@ std::vector<float> loadVerticesFromFile(const std::string& filepath)
         std::cerr << "Unable to open file: " << filepath << std::endl;
     }
 
-    return vertices;
+    return;
 }
 
 inline const char* read_shader_from_file(const std::string& filePath)

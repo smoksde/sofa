@@ -4,6 +4,9 @@ project(sofa_project)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+set(CMAKE_BUILD_TYPE Debug)  # Set build type to Debug
+set(CMAKE_CXX_FLAGS_DEBUG "-g")  # Enable debug symbols
+
 find_package(SDL2 REQUIRED)
 find_package(GLEW REQUIRED)
 
