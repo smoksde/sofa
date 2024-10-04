@@ -25,3 +25,12 @@ target_link_libraries(
     ${GLEW_LIBRARIES}
     GL
 )
+
+add_executable(slice source/slice.cpp)
+
+target_link_libraries(
+    slice
+    ${SDL2_LIBRARIES}
+    ${GLEW_LIBRARIES}
+    GL
+)
