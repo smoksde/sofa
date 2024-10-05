@@ -11,7 +11,7 @@
 #include <iostream>
 #include <vector>
 
-const int GRID_SIZE = 128;
+const int GRID_SIZE = 64;
 
 const int GRID_SIZE_X = GRID_SIZE;
 const int GRID_SIZE_Y = GRID_SIZE;
@@ -129,7 +129,7 @@ int main(int argc, char* argv[])
 {
     
     const char* frame_title = "Slice";
-    int frame_width = 1800;
+    int frame_width = 1400;
     int frame_height = 1400;
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);  // OpenGL 4.x
@@ -145,7 +145,7 @@ int main(int argc, char* argv[])
     setupVoxelTexture(voxel_texture);
 
     std::vector<glm::vec4> objects = {
-        glm::vec4(0.0f, 0.0f, 0.0f, 100.0f)
+        glm::vec4(32.0f, 32.0f, 32.0f, 32.0f)
         // glm::vec4(32.0f, 32.0f, 32.0f, 20.0f),
         // glm::vec4(64.0f, 64.0f, 64.0f, 15.0f),
     };
