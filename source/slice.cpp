@@ -17,7 +17,7 @@ const int GRID_SIZE_X = GRID_SIZE;
 const int GRID_SIZE_Y = GRID_SIZE;
 const int GRID_SIZE_Z = GRID_SIZE;
 
-const char* compute_shader_source = "../shaders/slice_compute.glsl";
+const char* compute_shader_source = "../shaders/slice_sphere_compute.glsl";
 
 const char* vertex_shader_source = "../shaders/slice_vertex.glsl";
 const char* fragment_shader_source = "../shaders/slice_fragment.glsl";
@@ -52,7 +52,7 @@ GLuint createComputeShader(const char* shader_source)
     return shader;
 }
 
-GLuint createShaderProgram()
+GLuint createComputeShaderProgram()
 {
     GLuint shader = createComputeShader(compute_shader_source);
     GLuint program = glCreateProgram();
@@ -140,7 +140,7 @@ int main(int argc, char* argv[])
     std::shared_ptr<lumina::Viewport> viewport_ptr = std::make_shared<lumina::Viewport>(frame_title, frame_width, frame_height);
 
     lumina::Shader shader(vertex_shader_source, fragment_shader_source);
-    GLuint compute_program = createShaderProgram();
+    GLuint compute_program = createComputeShaderProgram();
     GLuint voxel_texture;
     setupVoxelTexture(voxel_texture);
 

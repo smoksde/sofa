@@ -34,3 +34,12 @@ target_link_libraries(
     ${GLEW_LIBRARIES}
     GL
 )
+
+add_executable(multi_window source/multi_window.cpp)
+
+target_link_libraries(
+    multi_window
+    ${SDL2_LIBRARIES}
+    ${GLEW_LIBRARIES}
+    GL
+)

@@ -8,19 +8,55 @@
 #include "lumina/lumina.hpp"
 #include "../util.h"
 
+#include "utils.hpp"
+
 #include <memory>
 #include <string>
+#include <stack>
+
+SDL_Window* createWindow(const char* title, int width, int height, int x, int y) {
+    SDL_Window* window = SDL_CreateWindow(title, x, y, width, height, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+    if (!window) {
+        std::cerr << "Failed to create window: " << SDL_GetError() << std::endl;
+        SDL_Quit();
+        exit(1);
+    }
+    return window;
+}
 
 int main()
 {
     const char* frame_title = "Interface";
-    int frame_width = 1800;
-    int frame_height = 1400;
+    int frame_width = 1200;
+    int frame_height = 1000;
+
+    const char* slice_frame_title = "Slice";
+    int slice_frame_width = 1200;
+    int slice_frame_height = 1200;
+
+    const int SLICE_GRID_SIZE_X = 256;
+    const int SLICE_GRID_SIZE_Y = 256;
+    const int SLICE_GRID_SIZE_Z = 256;
+
+    const char* slice_compute_shader_source = "../shaders/slice_compute.glsl";
+    const char* slice_vertex_shader_source = "../shaders/slice_vertex.glsl";
+    const char* slice_fragment_shader_source = "../shaders/slice_fragment.glsl";
 
     const int fps = 120;
     const int tps = 120;
 
-    std::shared_ptr<lumina::Viewport> viewport_ptr = std::make_shared<lumina::Viewport>(frame_title, frame_width, frame_height);
+    SDL_Window* window = createWindow(frame_title, frame_width, frame_height, 0, 0);
+    SDL_Window* slice_window = createWindow(slice_frame_title, slice_frame_width, slice_frame_height, 1400, 0);
+
+    SDL_GLContext gl_context = SDL_GL_CreateContext(window);
+    SDL_GLContext slice_gl_context = SDL_GL_CreateContext(slice_window);
+
+    SDL_GL_MakeCurrent(window, gl_context);
+
+    glewExperimental = GL_TRUE;
+    glewInit();
+
+    // std::shared_ptr<lumina::Viewport> viewport_ptr = std::make_shared<lumina::Viewport>(frame_title, frame_width, frame_height);
     
     std::shared_ptr<lumina::Camera3D> camera_ptr = std::make_shared<lumina::Camera3D>(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f),
     45.0f, (float)frame_width / frame_height, 0.1f, 100.0f);
@@ -31,39 +67,52 @@ int main()
 
     std::shared_ptr<lumina::Font> font_ptr = std::make_shared<lumina::Font>("../external/lumina/fonts/roboto_mono/RobotoMono-SemiBold.ttf", font_shader_ptr);
 
-    std::shared_ptr<lumina::Terminal> terminal_ptr = std::make_shared<lumina::Terminal>(viewport_ptr, font_ptr);
+    std::shared_ptr<lumina::Terminal> terminal_ptr = std::make_shared<lumina::Terminal>(window, font_ptr);
 
     std::vector<float> vertices;
     uint num_vertices;
     std::vector<uint> indices;
     uint num_indices;
-    loadGeometryFromFile("../geometry/cube.txt", vertices, num_vertices, indices, num_indices);
+    loadGeometryFromFile("../geometry/cuboid.txt", vertices, num_vertices, indices, num_indices);
 
     std::shared_ptr<std::vector<float>> vertices_ptr = std::make_shared<std::vector<float>>(vertices);
     std::shared_ptr<std::vector<unsigned int>> indices_ptr = std::make_shared<std::vector<unsigned int>>(indices);
 
-    lumina::Mesh cube_mesh(vertices_ptr, num_vertices, indices_ptr, num_indices);
-    std::shared_ptr<lumina::Mesh> cube_mesh_ptr = std::make_shared<lumina::Mesh>(cube_mesh);
+    lumina::Mesh cuboid_mesh(vertices_ptr, num_vertices, indices_ptr, num_indices);
+    std::shared_ptr<lumina::Mesh> cuboid_mesh_ptr = std::make_shared<lumina::Mesh>(cuboid_mesh);
 
-    std::shared_ptr<lumina::Node> root_node_ptr = std::make_shared<lumina::Node>(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(1.0f), cube_mesh_ptr, default_shader_ptr, camera_ptr);
+    std::vector<std::shared_ptr<lumina::Object>> objects;
+
+    std::shared_ptr<lumina::Object> obstacle_1 = std::make_shared<lumina::Object>(glm::vec3(0.0f), glm::vec3(15.0f), glm::vec3(5.0f), cuboid_mesh_ptr);
+    //std::shared_ptr<lumina::Object> obstacle_2 = std::make_shared<lumina::Object>(glm::vec3(1.0f), glm::vec3(30.0f), glm::vec3(2.0f), cuboid_mesh_ptr);
+    //std::shared_ptr<lumina::Object> obstacle_3 = std::make_shared<lumina::Object>(glm::vec3(2.0f), glm::vec3(45.0f), glm::vec3(1.0f), cuboid_mesh_ptr);
+    //std::shared_ptr<lumina::Object> obstacle_4 = std::make_shared<lumina::Object>(glm::vec3(3.0f), glm::vec3(20.0f), glm::vec3(1.0f), cuboid_mesh_ptr);
+
+    objects.push_back(obstacle_1);
+    //objects.push_back(obstacle_2);
+    //objects.push_back(obstacle_3);
+    //objects.push_back(obstacle_4);
+
+
+    //std::shared_ptr<lumina::Node> root_node_ptr = std::make_shared<lumina::Node>(glm::vec3(2.0f), glm::vec3(0.0f), glm::vec3(1.0f), cube_mesh_ptr, default_shader_ptr, camera_ptr);
  
-    std::shared_ptr<lumina::Node> piano_ptr = std::make_shared<lumina::Node>(glm::vec3(5.0f, 5.0f, 0.0f), glm::vec3(0.0f), glm::vec3(1.0f), cube_mesh_ptr, default_shader_ptr, camera_ptr);
+    // std::shared_ptr<lumina::Node> piano_ptr = std::make_shared<lumina::Node>(glm::vec3(5.0f, 5.0f, 0.0f), glm::vec3(0.0f), glm::vec3(1.0f), cube_mesh_ptr, default_shader_ptr, camera_ptr);
 
-    std::shared_ptr<lumina::Node> obstacle1_ptr = std::make_shared<lumina::Node>(glm::vec3(2.0f, 2.0f, 3.0f), glm::vec3(0.0f), glm::vec3(1.0f), cube_mesh_ptr, default_shader_ptr, camera_ptr);
-    std::shared_ptr<lumina::Node> obstacle2_ptr = std::make_shared<lumina::Node>(glm::vec3(-2.0f, 2.0f, 0.0f), glm::vec3(0.0f), glm::vec3(1.0f), cube_mesh_ptr, default_shader_ptr, camera_ptr);
-    std::shared_ptr<lumina::Node> obstacle3_ptr = std::make_shared<lumina::Node>(glm::vec3(1.0f, 3.0f, -3.0f), glm::vec3(0.0f), glm::vec3(1.0f), cube_mesh_ptr, default_shader_ptr, camera_ptr);
-    std::shared_ptr<lumina::Node> obstacle4_ptr = std::make_shared<lumina::Node>(glm::vec3(5.0f, 1.0f, 1.0f), glm::vec3(0.0f), glm::vec3(1.0f), cube_mesh_ptr, default_shader_ptr, camera_ptr);
-    std::shared_ptr<lumina::Node> obstacle5_ptr = std::make_shared<lumina::Node>(glm::vec3(2.0f, -3.0f, -1.0f), glm::vec3(0.0f), glm::vec3(1.0f), cube_mesh_ptr, default_shader_ptr, camera_ptr);
-    std::shared_ptr<lumina::Node> obstacle6_ptr = std::make_shared<lumina::Node>(glm::vec3(2.0f, 1.0f, 0.0f), glm::vec3(0.0f), glm::vec3(1.0f), cube_mesh_ptr, default_shader_ptr, camera_ptr);
+    //std::shared_ptr<lumina::Node> obstacle1_ptr = std::make_shared<lumina::Node>(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(1.0f), glm::vec3(1.0f), cube_mesh_ptr, default_shader_ptr, camera_ptr);
+    //std::shared_ptr<lumina::Node> obstacle2_ptr = std::make_shared<lumina::Node>(glm::vec3(-2.0f, 2.0f, 0.0f), glm::vec3(0.0f), glm::vec3(1.0f), cube_mesh_ptr, default_shader_ptr, camera_ptr);
+    //std::shared_ptr<lumina::Node> obstacle3_ptr = std::make_shared<lumina::Node>(glm::vec3(1.0f, 3.0f, -3.0f), glm::vec3(0.0f), glm::vec3(1.0f), cube_mesh_ptr, default_shader_ptr, camera_ptr);
+    //std::shared_ptr<lumina::Node> obstacle4_ptr = std::make_shared<lumina::Node>(glm::vec3(5.0f, 1.0f, 1.0f), glm::vec3(0.0f), glm::vec3(1.0f), cube_mesh_ptr, default_shader_ptr, camera_ptr);
+    //std::shared_ptr<lumina::Node> obstacle5_ptr = std::make_shared<lumina::Node>(glm::vec3(2.0f, -3.0f, -1.0f), glm::vec3(0.0f), glm::vec3(1.0f), cube_mesh_ptr, default_shader_ptr, camera_ptr);
+    //std::shared_ptr<lumina::Node> obstacle6_ptr = std::make_shared<lumina::Node>(glm::vec3(2.0f, 1.0f, 0.0f), glm::vec3(0.0f), glm::vec3(1.0f), cube_mesh_ptr, default_shader_ptr, camera_ptr);
 
-    root_node_ptr->addChild(piano_ptr);
+    // root_node_ptr->addChild(piano_ptr);
 
-    root_node_ptr->addChild(obstacle1_ptr);
-    root_node_ptr->addChild(obstacle2_ptr);
-    root_node_ptr->addChild(obstacle3_ptr);
-    root_node_ptr->addChild(obstacle4_ptr);
-    root_node_ptr->addChild(obstacle5_ptr);
-    root_node_ptr->addChild(obstacle6_ptr);
+    //root_node_ptr->addChild(obstacle1_ptr);
+    //root_node_ptr->addChild(obstacle2_ptr);
+    //root_node_ptr->addChild(obstacle3_ptr);
+    //root_node_ptr->addChild(obstacle4_ptr);
+    //root_node_ptr->addChild(obstacle5_ptr);
+    //root_node_ptr->addChild(obstacle6_ptr);
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
@@ -73,9 +122,24 @@ int main()
     
     SDL_SetRelativeMouseMode(SDL_TRUE); // infinite mouse movement, no cursor, always in window
 
+    SDL_GL_MakeCurrent(slice_window, slice_gl_context);
+
+    lumina::Shader slice_shader(slice_vertex_shader_source, slice_fragment_shader_source);
+    GLuint compute_program = createComputeShaderProgram(slice_compute_shader_source);
+    GLuint voxel_texture;
+    setupVoxelTexture(voxel_texture, SLICE_GRID_SIZE_X, SLICE_GRID_SIZE_Y, SLICE_GRID_SIZE_Z);
+    std::vector<glm::vec4> object_positions_padded;
+    std::vector<glm::vec4> object_rotations_padded;
+    std::vector<glm::vec4> object_scales_padded;
+
+    // TODO: Adjust shader and ssbo
+
     // Pre-Loop Code
     SDL_Event event;
+
     bool running = true;
+    bool window1Open = true;
+    bool window2Open = true;
 
     uint64 sdl_ticks = SDL_GetTicks64();
     uint64 last_tick_time = sdl_ticks;
@@ -87,6 +151,9 @@ int main()
     float last_x = frame_width / 2.0f;
     float last_y = frame_height / 2.0f;
     bool first_mouse = true;
+
+    float slize_z = 0.0f;
+    bool slice_rendered = false;
 
     while (running)
     {
@@ -101,10 +168,20 @@ int main()
             {
                 terminal_ptr->processInput(event);
             }
-
-            if (event.type == SDL_QUIT)
-            {
+            if (event.type == SDL_QUIT) {
                 running = false;
+            }
+            if (event.type == SDL_WINDOWEVENT) {
+                if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
+                    if (event.window.windowID == SDL_GetWindowID(window)) {
+                        window1Open = false;
+                        SDL_DestroyWindow(window);
+                    } 
+                    else if (event.window.windowID == SDL_GetWindowID(slice_window)) {
+                        window2Open = false;
+                        SDL_DestroyWindow(slice_window);
+                    }
+                }
             }
             else if (event.type == SDL_MOUSEMOTION)
             {
@@ -146,6 +223,26 @@ int main()
             }
         }
 
+        // SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT) {
+                running = false;
+            }
+
+            if (event.type == SDL_WINDOWEVENT) {
+                if (event.window.event == SDL_WINDOWEVENT_CLOSE) {
+                    if (event.window.windowID == SDL_GetWindowID(window)) {
+                        window1Open = false;
+                        SDL_DestroyWindow(window);
+                    } 
+                    else if (event.window.windowID == SDL_GetWindowID(slice_window)) {
+                        window2Open = false;
+                        SDL_DestroyWindow(slice_window);
+                    }
+                }
+            }
+        }
+
         float tick_delta_time = current_time - last_tick_time;
         float update_delta_time = current_time - last_update_time;
         float render_delta_time = current_time - last_render_time;
@@ -168,23 +265,44 @@ int main()
         }
 
         // UPDATE HERE
-        root_node_ptr->update();
+        //root_node_ptr->update();
 
         last_update_time = current_time;
 
         if (render_delta_time >= 1000 / fps)
         {
+
+            // Start of render block for main window
+
+            SDL_GL_MakeCurrent(window, gl_context);
+
             glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            root_node_ptr->render();
+            //root_node_ptr->render();
+
+            glm::mat4 view = camera_ptr->getViewMatrix();
+            glm::mat4 projection = camera_ptr->getProjectionMatrix();
+
+            for (auto current_object : objects)
+            {
+                default_shader_ptr->bind();
+                glm::mat4 model = current_object->getModelMatrix();
+                glUniformMatrix4fv(glGetUniformLocation(default_shader_ptr->shader_id, "model"), 1, GL_FALSE, glm::value_ptr(model));
+                glUniformMatrix4fv(glGetUniformLocation(default_shader_ptr->shader_id, "view"), 1, GL_FALSE, glm::value_ptr(view));
+                glUniformMatrix4fv(glGetUniformLocation(default_shader_ptr->shader_id, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+                current_object->mesh->bind();
+                glDrawElements(GL_TRIANGLES, current_object->mesh->getNumIndices(), GL_UNSIGNED_INT, 0);
+                current_object->mesh->unbind();
+                default_shader_ptr->unbind();
+            }
 
             terminal_ptr->render();
 
             font_ptr->shader_ptr->bind();
             glUniform4f(glGetUniformLocation(font_ptr->shader_ptr->shader_id, "u_color"), 1.0f, 1.0f, 1.0f, 1.0f);
             int w, h;
-            SDL_GetWindowSize(viewport_ptr->window, &w, &h);
+            SDL_GetWindowSize(window, &w, &h);
             glm::mat4 ortho = glm::ortho(0.0f, (float)w, (float)h, 0.0f);
             glUniformMatrix4fv(glGetUniformLocation(font_ptr->shader_ptr->shader_id, "u_modelViewProj"), 1, GL_FALSE, glm::value_ptr(ortho));
             int x, y;
@@ -197,12 +315,103 @@ int main()
             debug_render_string.append(std::to_string(camera_ptr->position.y));
             debug_render_string.append(" ");
             debug_render_string.append(std::to_string(camera_ptr->position.z));
+            debug_render_string.append(" ");
+            debug_render_string.append(std::to_string(slize_z));
             font_ptr->drawString(float(x+padding_left), float(y+padding_top), debug_render_string.c_str()); 
             font_ptr->shader_ptr->unbind();
 
-            viewport_ptr->swapBuffers();
+            SDL_GL_SwapWindow(window);
 
-            // SDL_GL_SwapWindow(interface_viewport_ptr->window);
+            // Start of render block for slice window
+
+            SDL_GL_MakeCurrent(slice_window, slice_gl_context);
+
+            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            // Fill buffers
+
+            for (auto current_object : objects)
+            {
+                object_positions_padded.push_back(glm::vec4(current_object->position, 0.0f));
+                object_rotations_padded.push_back(glm::vec4(current_object->rotation, 0.0f));
+                object_scales_padded.push_back(glm::vec4(current_object->scale, 0.0f));
+            }
+
+           
+            
+
+            // Consider using utils function
+            GLuint position_ssbo;
+            glGenBuffers(1, &position_ssbo);
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, position_ssbo);
+            glBufferData(GL_SHADER_STORAGE_BUFFER, object_positions_padded.size() * sizeof(glm::vec4), object_positions_padded.data(), GL_STATIC_DRAW);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, position_ssbo);
+
+            GLuint rotation_ssbo;
+            glGenBuffers(1, &rotation_ssbo);
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, rotation_ssbo);
+            glBufferData(GL_SHADER_STORAGE_BUFFER, object_rotations_padded.size() * sizeof(glm::vec4), object_rotations_padded.data(), GL_STATIC_DRAW);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, rotation_ssbo);
+
+            GLuint scale_ssbo;
+            glGenBuffers(1, &scale_ssbo);
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, scale_ssbo);
+            glBufferData(GL_SHADER_STORAGE_BUFFER, object_scales_padded.size() * sizeof(glm::vec4), object_scales_padded.data(), GL_STATIC_DRAW);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, scale_ssbo);
+
+            glUseProgram(compute_program);
+
+
+            glUniform3i(glGetUniformLocation(compute_program, "grid_size"), SLICE_GRID_SIZE_X, SLICE_GRID_SIZE_Y, SLICE_GRID_SIZE_Z);
+            glUniform3f(glGetUniformLocation(compute_program, "grid_origin"), 0.0f, 0.0f, 0.0f);
+            glUniform3f(glGetUniformLocation(compute_program, "grid_scale"), 16.0f, 16.0f, 16.0f);
+            glUniform3f(glGetUniformLocation(compute_program, "voxel_size"), 1.0f, 1.0f, 1.0f);
+            glUniform1i(glGetUniformLocation(compute_program, "num_objects"), object_positions_padded.size());
+
+            glDispatchCompute(SLICE_GRID_SIZE_X / 8, SLICE_GRID_SIZE_Y / 8, SLICE_GRID_SIZE_Z / 8);
+            //glDispatchCompute(SLICE_GRID_SIZE_X, SLICE_GRID_SIZE_Y, SLICE_GRID_SIZE_Z);
+
+            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+            glUseProgram(0);
+
+            
+
+            GLuint VAO, VBO, EBO;
+            setupQuad(VAO, VBO, EBO);
+
+            slice_shader.bind();
+
+            // Bind the voxel texture for the fragment shader
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_3D, voxel_texture);
+            glUniform1i(glGetUniformLocation(slice_shader.shader_id, "voxel_texture"), 0);
+
+            // Set the slice Z value
+            glUniform1f(glGetUniformLocation(slice_shader.shader_id, "slice_z"), slize_z);
+
+            // Render the quad (full screen slice)
+            glBindVertexArray(VAO);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+            slice_shader.unbind();
+
+            SDL_GL_SwapWindow(slice_window);
+
+            object_positions_padded.clear();
+            object_rotations_padded.clear();
+            object_scales_padded.clear();
+
+            //glDeleteBuffers(1, &position_ssbo); // Check if necessary
+            //glDeleteBuffers(1, &rotation_ssbo); // Check if necessary
+            //glDeleteBuffers(1, &scale_ssbo); // Check if necessary
+
+            // Put it in update
+            slize_z += 0.004f;
+            if (slize_z > 1.0f)
+                slize_z = 0.0f;
+
             last_render_time = current_time;
         }
     }
