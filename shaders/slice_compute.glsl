@@ -3,19 +3,9 @@
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 layout (rgba32f, binding = 0) uniform image3D frame_buffer;
 
-layout (std430, binding = 1) buffer position_data
+layout (std430, binding = 1) buffer inverse_model_data
 {
-    vec4 positions[];
-};
-
-layout (std430, binding = 2) buffer rotation_data
-{
-    vec4 rotations[];
-};
-
-layout (std430, binding = 3) buffer scale_data
-{
-    vec4 scales[];
+    mat4 inverse_models[];
 };
 
 uniform ivec3 grid_size;
@@ -24,14 +14,9 @@ uniform vec3 grid_scale;
 uniform vec3 voxel_size;
 uniform int num_objects;
 
-
-bool isInsideCuboid(vec3 pos, vec3 cuboid_pos, vec3 cuboid_scale)
+bool isInsideUnitCuboid(vec3 pos)
 {
-    vec3 half_scale = cuboid_scale * 0.5;
-    
-    return (pos.x >= cuboid_pos.x - half_scale.x && pos.x <= cuboid_pos.x + half_scale.x) &&
-           (pos.y >= cuboid_pos.y - half_scale.y && pos.y <= cuboid_pos.y + half_scale.y) &&
-           (pos.z >= cuboid_pos.z - half_scale.z && pos.z <= cuboid_pos.z + half_scale.z);
+    return pos.x >= -0.5 && pos.x <= 0.5 && pos.y >= -0.5 && pos.y <= 0.5 && pos.z >= -0.5 && pos.z <= 0.5;
 }
 
 mat3 eulerToRotationMatrix(vec3 euler)
@@ -59,11 +44,10 @@ void main()
 
     for (int i = 0; i < num_objects; i++)
     {
-        mat3 rotation_matrix = eulerToRotationMatrix(rotations[i].xyz);
+        vec4 local_pos_4 = inverse_models[i] * vec4(global_pos.x, global_pos.y, global_pos.z, 1.0);
+        vec3 local_pos = vec3(local_pos_4.x, local_pos_4.y, local_pos_4.z);
 
-        vec3 local_pos = transpose(rotation_matrix) * (global_pos - positions[i].xyz);
-
-        if (isInsideCuboid(local_pos, vec3(0.0, 0.0, 0.0), scales[i].xyz))
+        if (isInsideUnitCuboid(local_pos))
         {
             inside = true;
             ord += 1;
@@ -76,21 +60,17 @@ void main()
     {
         color = vec4(0.0, 0.0, 0.0, 1.0);
     }
-    if (ord == 1)
+    else if (ord == 1)
     {
         color = vec4(1.0, 0.0, 0.0, 1.0); 
-    } 
-    if (ord == 2)
+    }
+    else if (ord == 2)
     {
-        color = vec4(0.0, 1.0, 0.0, 1.0);
+        color = vec4(0.0, 1.0, 0.0, 1.0); 
     }  
-    if (ord == 3)
+    else
     {
-        color = vec4(0.0, 0.0, 1.0, 1.0);  
-    }  
-    if (ord == 4)
-    {
-        color = vec4(1.0, 1.0, 0.0, 1.0);  
-    }  
+        color = vec4(0.0, 0.0, 1.0, 1.0);
+    }
     imageStore(frame_buffer, voxel_idx, color);
 }

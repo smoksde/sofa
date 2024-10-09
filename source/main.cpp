@@ -27,8 +27,8 @@ SDL_Window* createWindow(const char* title, int width, int height, int x, int y)
 int main()
 {
     const char* frame_title = "Interface";
-    int frame_width = 1200;
-    int frame_height = 1000;
+    int frame_width = 1400;
+    int frame_height = 1200;
 
     const char* slice_frame_title = "Slice";
     int slice_frame_width = 1200;
@@ -97,15 +97,17 @@ int main()
 
     std::shared_ptr<lumina::Object> slice_plane = std::make_shared<lumina::Object>(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(1.0f), quad_mesh_ptr);
 
-    std::shared_ptr<lumina::Object> obstacle_1 = std::make_shared<lumina::Object>(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(1.0f), cuboid_mesh_ptr);
+    std::shared_ptr<lumina::Object> obstacle_1 = std::make_shared<lumina::Object>(glm::vec3(-1.0f), glm::vec3(20.0f), glm::vec3(1.0f, 2.0f, 3.0f), cuboid_mesh_ptr);
     std::shared_ptr<lumina::Object> obstacle_2 = std::make_shared<lumina::Object>(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(2.0f), cuboid_mesh_ptr);
     std::shared_ptr<lumina::Object> obstacle_3 = std::make_shared<lumina::Object>(glm::vec3(2.0f), glm::vec3(45.0f), glm::vec3(1.0f), cuboid_mesh_ptr);
     std::shared_ptr<lumina::Object> obstacle_4 = std::make_shared<lumina::Object>(glm::vec3(3.0f), glm::vec3(0.0f), glm::vec3(1.0f), cuboid_mesh_ptr);
+    std::shared_ptr<lumina::Object> obstacle_5 = std::make_shared<lumina::Object>(glm::vec3(2.0f, 1.6f, 1.4f), glm::vec3(10.0f, 30.0f, 15.0f), glm::vec3(1.0f), cuboid_mesh_ptr);
 
     objects.push_back(obstacle_1);
     objects.push_back(obstacle_2);
     objects.push_back(obstacle_3);
     objects.push_back(obstacle_4);
+    objects.push_back(obstacle_5);
 
 
     //std::shared_ptr<lumina::Node> root_node_ptr = std::make_shared<lumina::Node>(glm::vec3(2.0f), glm::vec3(0.0f), glm::vec3(1.0f), cube_mesh_ptr, default_shader_ptr, camera_ptr);
@@ -143,9 +145,8 @@ int main()
     GLuint compute_program = createComputeShaderProgram(slice_compute_shader_source);
     GLuint voxel_texture;
     setupVoxelTexture(voxel_texture, SLICE_GRID_SIZE_X, SLICE_GRID_SIZE_Y, SLICE_GRID_SIZE_Z);
-    std::vector<glm::vec4> object_positions_padded;
-    std::vector<glm::vec4> object_rotations_padded;
-    std::vector<glm::vec4> object_scales_padded;
+
+    std::vector<glm::mat4> object_inverse_model_matrices;
 
     // TODO: Adjust shader and ssbo
 
@@ -315,6 +316,7 @@ int main()
                 glUniformMatrix4fv(glGetUniformLocation(default_shader_ptr->shader_id, "model"), 1, GL_FALSE, glm::value_ptr(model));
                 glUniformMatrix4fv(glGetUniformLocation(default_shader_ptr->shader_id, "view"), 1, GL_FALSE, glm::value_ptr(view));
                 glUniformMatrix4fv(glGetUniformLocation(default_shader_ptr->shader_id, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+                glUniform4f(glGetUniformLocation(default_shader_ptr->shader_id, "color"), 0.9f, 0.3f, 0.4f, 1.0f);
                 current_object->mesh->bind();
                 glDrawElements(GL_TRIANGLES, current_object->mesh->getNumIndices(), GL_UNSIGNED_INT, 0);
                 current_object->mesh->unbind();
@@ -327,6 +329,7 @@ int main()
             glUniformMatrix4fv(glGetUniformLocation(default_shader_ptr->shader_id, "model"), 1, GL_FALSE, glm::value_ptr(model));
             glUniformMatrix4fv(glGetUniformLocation(default_shader_ptr->shader_id, "view"), 1, GL_FALSE, glm::value_ptr(view));
             glUniformMatrix4fv(glGetUniformLocation(default_shader_ptr->shader_id, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+            glUniform4f(glGetUniformLocation(default_shader_ptr->shader_id, "color"), 1.0f, 1.0f, 1.0f, 1.0f);
             slice_plane->mesh->bind();
             glDrawElements(GL_TRIANGLES, slice_plane->mesh->getNumIndices(), GL_UNSIGNED_INT, 0);
             slice_plane->mesh->unbind();
@@ -372,38 +375,22 @@ int main()
 
             for (auto current_object : objects)
             {
-                object_positions_padded.push_back(glm::vec4(current_object->position, 0.0f));
-                object_rotations_padded.push_back(glm::vec4(current_object->rotation, 0.0f));
-                object_scales_padded.push_back(glm::vec4(current_object->scale, 0.0f));
+                object_inverse_model_matrices.push_back(glm::inverse(current_object->getModelMatrix()));
             }
 
-            // Consider using utils function
-            GLuint position_ssbo;
-            glGenBuffers(1, &position_ssbo);
-            glBindBuffer(GL_SHADER_STORAGE_BUFFER, position_ssbo);
-            glBufferData(GL_SHADER_STORAGE_BUFFER, object_positions_padded.size() * sizeof(glm::vec4), object_positions_padded.data(), GL_STATIC_DRAW);
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, position_ssbo);
-
-            GLuint rotation_ssbo;
-            glGenBuffers(1, &rotation_ssbo);
-            glBindBuffer(GL_SHADER_STORAGE_BUFFER, rotation_ssbo);
-            glBufferData(GL_SHADER_STORAGE_BUFFER, object_rotations_padded.size() * sizeof(glm::vec4), object_rotations_padded.data(), GL_STATIC_DRAW);
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, rotation_ssbo);
-
-            GLuint scale_ssbo;
-            glGenBuffers(1, &scale_ssbo);
-            glBindBuffer(GL_SHADER_STORAGE_BUFFER, scale_ssbo);
-            glBufferData(GL_SHADER_STORAGE_BUFFER, object_scales_padded.size() * sizeof(glm::vec4), object_scales_padded.data(), GL_STATIC_DRAW);
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, scale_ssbo);
+            GLuint inverse_model_matrix_ssbo;
+            glGenBuffers(1, &inverse_model_matrix_ssbo);
+            glBindBuffer(GL_SHADER_STORAGE_BUFFER, inverse_model_matrix_ssbo);
+            glBufferData(GL_SHADER_STORAGE_BUFFER, object_inverse_model_matrices.size() * sizeof(glm::mat4), object_inverse_model_matrices.data(), GL_STATIC_DRAW);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, inverse_model_matrix_ssbo);
 
             glUseProgram(compute_program);
-
 
             glUniform3i(glGetUniformLocation(compute_program, "grid_size"), SLICE_GRID_SIZE_X, SLICE_GRID_SIZE_Y, SLICE_GRID_SIZE_Z);
             glUniform3f(glGetUniformLocation(compute_program, "grid_origin"), grid_origin.x, grid_origin.y, grid_origin.z);
             glUniform3f(glGetUniformLocation(compute_program, "grid_scale"), grid_scale.x, grid_scale.y, grid_scale.z);
             glUniform3f(glGetUniformLocation(compute_program, "voxel_size"), 1.0f, 1.0f, 1.0f);
-            glUniform1i(glGetUniformLocation(compute_program, "num_objects"), object_positions_padded.size());
+            glUniform1i(glGetUniformLocation(compute_program, "num_objects"), object_inverse_model_matrices.size());
 
             glDispatchCompute(SLICE_GRID_SIZE_X / 8, SLICE_GRID_SIZE_Y / 8, SLICE_GRID_SIZE_Z / 8);
             //glDispatchCompute(SLICE_GRID_SIZE_X, SLICE_GRID_SIZE_Y, SLICE_GRID_SIZE_Z);
@@ -433,16 +420,14 @@ int main()
 
             SDL_GL_SwapWindow(slice_window);
 
-            object_positions_padded.clear();
-            object_rotations_padded.clear();
-            object_scales_padded.clear();
+            object_inverse_model_matrices.clear();
 
             //glDeleteBuffers(1, &position_ssbo); // Check if necessary
             //glDeleteBuffers(1, &rotation_ssbo); // Check if necessary
             //glDeleteBuffers(1, &scale_ssbo); // Check if necessary
 
             // Put it in update
-            slice_z += 0.0002f;
+            slice_z += 0.002f;
             if (slice_z > 1.0f)
                 slice_z = 0.0f;
 
