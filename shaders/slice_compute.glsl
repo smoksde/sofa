@@ -66,8 +66,7 @@ void main()
         if (isInsideCuboid(local_pos, vec3(0.0, 0.0, 0.0), scales[i].xyz))
         {
             inside = true;
-            ord = i+1;
-            break;
+            ord += 1;
         }
     }
 

@@ -81,17 +81,31 @@ int main()
     lumina::Mesh cuboid_mesh(vertices_ptr, num_vertices, indices_ptr, num_indices);
     std::shared_ptr<lumina::Mesh> cuboid_mesh_ptr = std::make_shared<lumina::Mesh>(cuboid_mesh);
 
+    std::vector<float> quad_vertices;
+    uint quad_num_vertices;
+    std::vector<uint> quad_indices;
+    uint quad_num_indices;
+    loadGeometryFromFile("../geometry/quad.txt", quad_vertices, quad_num_vertices, quad_indices, quad_num_indices);
+
+    std::shared_ptr<std::vector<float>> quad_vertices_ptr = std::make_shared<std::vector<float>>(quad_vertices);
+    std::shared_ptr<std::vector<unsigned int>> quad_indices_ptr = std::make_shared<std::vector<unsigned int>>(quad_indices);
+
+    lumina::Mesh quad_mesh(quad_vertices_ptr, quad_num_vertices, quad_indices_ptr, quad_num_indices);
+    std::shared_ptr<lumina::Mesh> quad_mesh_ptr = std::make_shared<lumina::Mesh>(quad_mesh);
+
     std::vector<std::shared_ptr<lumina::Object>> objects;
 
-    std::shared_ptr<lumina::Object> obstacle_1 = std::make_shared<lumina::Object>(glm::vec3(0.0f), glm::vec3(15.0f), glm::vec3(5.0f), cuboid_mesh_ptr);
-    //std::shared_ptr<lumina::Object> obstacle_2 = std::make_shared<lumina::Object>(glm::vec3(1.0f), glm::vec3(30.0f), glm::vec3(2.0f), cuboid_mesh_ptr);
-    //std::shared_ptr<lumina::Object> obstacle_3 = std::make_shared<lumina::Object>(glm::vec3(2.0f), glm::vec3(45.0f), glm::vec3(1.0f), cuboid_mesh_ptr);
-    //std::shared_ptr<lumina::Object> obstacle_4 = std::make_shared<lumina::Object>(glm::vec3(3.0f), glm::vec3(20.0f), glm::vec3(1.0f), cuboid_mesh_ptr);
+    std::shared_ptr<lumina::Object> slice_plane = std::make_shared<lumina::Object>(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(1.0f), quad_mesh_ptr);
+
+    std::shared_ptr<lumina::Object> obstacle_1 = std::make_shared<lumina::Object>(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(1.0f), cuboid_mesh_ptr);
+    std::shared_ptr<lumina::Object> obstacle_2 = std::make_shared<lumina::Object>(glm::vec3(0.0f), glm::vec3(0.0f), glm::vec3(2.0f), cuboid_mesh_ptr);
+    std::shared_ptr<lumina::Object> obstacle_3 = std::make_shared<lumina::Object>(glm::vec3(2.0f), glm::vec3(45.0f), glm::vec3(1.0f), cuboid_mesh_ptr);
+    std::shared_ptr<lumina::Object> obstacle_4 = std::make_shared<lumina::Object>(glm::vec3(3.0f), glm::vec3(0.0f), glm::vec3(1.0f), cuboid_mesh_ptr);
 
     objects.push_back(obstacle_1);
-    //objects.push_back(obstacle_2);
-    //objects.push_back(obstacle_3);
-    //objects.push_back(obstacle_4);
+    objects.push_back(obstacle_2);
+    objects.push_back(obstacle_3);
+    objects.push_back(obstacle_4);
 
 
     //std::shared_ptr<lumina::Node> root_node_ptr = std::make_shared<lumina::Node>(glm::vec3(2.0f), glm::vec3(0.0f), glm::vec3(1.0f), cube_mesh_ptr, default_shader_ptr, camera_ptr);
@@ -117,6 +131,7 @@ int main()
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     //glDisable(GL_CULL_FACE);
     //glFrontFace(GL_CW);   // Winding order to clock-wise
     
@@ -152,8 +167,11 @@ int main()
     float last_y = frame_height / 2.0f;
     bool first_mouse = true;
 
-    float slize_z = 0.0f;
+    float slice_z = 0.0f;
     bool slice_rendered = false;
+
+    glm::vec3 grid_origin = glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 grid_scale = glm::vec3(8.0f, 8.0f, 8.0f);
 
     while (running)
     {
@@ -267,6 +285,9 @@ int main()
         // UPDATE HERE
         //root_node_ptr->update();
 
+        slice_plane->position = grid_origin - (glm::vec3(0.0f, 0.0f, grid_scale.z) * (0.5f - slice_z));
+        slice_plane->scale = grid_scale;
+
         last_update_time = current_time;
 
         if (render_delta_time >= 1000 / fps)
@@ -278,15 +299,18 @@ int main()
 
             glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
             //root_node_ptr->render();
 
             glm::mat4 view = camera_ptr->getViewMatrix();
             glm::mat4 projection = camera_ptr->getProjectionMatrix();
 
+            default_shader_ptr->bind();
+
             for (auto current_object : objects)
             {
-                default_shader_ptr->bind();
+                
                 glm::mat4 model = current_object->getModelMatrix();
                 glUniformMatrix4fv(glGetUniformLocation(default_shader_ptr->shader_id, "model"), 1, GL_FALSE, glm::value_ptr(model));
                 glUniformMatrix4fv(glGetUniformLocation(default_shader_ptr->shader_id, "view"), 1, GL_FALSE, glm::value_ptr(view));
@@ -294,12 +318,27 @@ int main()
                 current_object->mesh->bind();
                 glDrawElements(GL_TRIANGLES, current_object->mesh->getNumIndices(), GL_UNSIGNED_INT, 0);
                 current_object->mesh->unbind();
-                default_shader_ptr->unbind();
+                
             }
+
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+            glm::mat4 model = slice_plane->getModelMatrix();
+            glUniformMatrix4fv(glGetUniformLocation(default_shader_ptr->shader_id, "model"), 1, GL_FALSE, glm::value_ptr(model));
+            glUniformMatrix4fv(glGetUniformLocation(default_shader_ptr->shader_id, "view"), 1, GL_FALSE, glm::value_ptr(view));
+            glUniformMatrix4fv(glGetUniformLocation(default_shader_ptr->shader_id, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+            slice_plane->mesh->bind();
+            glDrawElements(GL_TRIANGLES, slice_plane->mesh->getNumIndices(), GL_UNSIGNED_INT, 0);
+            slice_plane->mesh->unbind();
+
+
+            default_shader_ptr->unbind();
 
             terminal_ptr->render();
 
             font_ptr->shader_ptr->bind();
+
+
             glUniform4f(glGetUniformLocation(font_ptr->shader_ptr->shader_id, "u_color"), 1.0f, 1.0f, 1.0f, 1.0f);
             int w, h;
             SDL_GetWindowSize(window, &w, &h);
@@ -316,7 +355,7 @@ int main()
             debug_render_string.append(" ");
             debug_render_string.append(std::to_string(camera_ptr->position.z));
             debug_render_string.append(" ");
-            debug_render_string.append(std::to_string(slize_z));
+            debug_render_string.append(std::to_string(slice_z));
             font_ptr->drawString(float(x+padding_left), float(y+padding_top), debug_render_string.c_str()); 
             font_ptr->shader_ptr->unbind();
 
@@ -337,9 +376,6 @@ int main()
                 object_rotations_padded.push_back(glm::vec4(current_object->rotation, 0.0f));
                 object_scales_padded.push_back(glm::vec4(current_object->scale, 0.0f));
             }
-
-           
-            
 
             // Consider using utils function
             GLuint position_ssbo;
@@ -364,8 +400,8 @@ int main()
 
 
             glUniform3i(glGetUniformLocation(compute_program, "grid_size"), SLICE_GRID_SIZE_X, SLICE_GRID_SIZE_Y, SLICE_GRID_SIZE_Z);
-            glUniform3f(glGetUniformLocation(compute_program, "grid_origin"), 0.0f, 0.0f, 0.0f);
-            glUniform3f(glGetUniformLocation(compute_program, "grid_scale"), 16.0f, 16.0f, 16.0f);
+            glUniform3f(glGetUniformLocation(compute_program, "grid_origin"), grid_origin.x, grid_origin.y, grid_origin.z);
+            glUniform3f(glGetUniformLocation(compute_program, "grid_scale"), grid_scale.x, grid_scale.y, grid_scale.z);
             glUniform3f(glGetUniformLocation(compute_program, "voxel_size"), 1.0f, 1.0f, 1.0f);
             glUniform1i(glGetUniformLocation(compute_program, "num_objects"), object_positions_padded.size());
 
@@ -375,8 +411,6 @@ int main()
             glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
             glUseProgram(0);
-
-            
 
             GLuint VAO, VBO, EBO;
             setupQuad(VAO, VBO, EBO);
@@ -389,7 +423,7 @@ int main()
             glUniform1i(glGetUniformLocation(slice_shader.shader_id, "voxel_texture"), 0);
 
             // Set the slice Z value
-            glUniform1f(glGetUniformLocation(slice_shader.shader_id, "slice_z"), slize_z);
+            glUniform1f(glGetUniformLocation(slice_shader.shader_id, "slice_z"), slice_z);
 
             // Render the quad (full screen slice)
             glBindVertexArray(VAO);
@@ -408,9 +442,9 @@ int main()
             //glDeleteBuffers(1, &scale_ssbo); // Check if necessary
 
             // Put it in update
-            slize_z += 0.004f;
-            if (slize_z > 1.0f)
-                slize_z = 0.0f;
+            slice_z += 0.0002f;
+            if (slice_z > 1.0f)
+                slice_z = 0.0f;
 
             last_render_time = current_time;
         }
